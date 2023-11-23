@@ -1,3 +1,3 @@
-
-# print(type(loaded_data['encodings'][0]))
-# print(len(loaded_data['names']), len(loaded_data['encodings']), loaded_data['encodings'][0].shape)
+tangle(img.copy(), (detection.left(), detection.top()), (detection.right(), detection.bottom()), (0,255,0))
+        cv2.imshow('im',img2)
+        cv2.waitKey(0)
