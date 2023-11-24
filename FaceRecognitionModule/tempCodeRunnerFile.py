@@ -1,2 +1,0 @@
-
-    # obj.recognize_face(

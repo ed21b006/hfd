@@ -40,20 +40,27 @@ class FaceModule():
         cv2.imwrite(variables.DATABASE_PATH + person_name + '/' + filename, frame)
 
 
-    def show_landmarks(self, image):
+    def find_landmarks(self, frame):
 
         try:
-            detection = self.detector(image, 1)[0]
-            landmarks = self.pose_predictor(image, detection)
-            landmarks_as_tuples = [(p.x, p.y) for p in landmarks.parts()]
+            landmarks_tuples_list = []
+            detections = self.detector(frame, 1)
 
-            for point in landmarks_as_tuples:
-                image = cv2.circle(image, point, 3, (0,0,255), -1)
+            for detection in detections:
+                landmarks = self.pose_predictor(frame, detection)
+                landmarks_tuples_list.append([(p.x, p.y) for p in landmarks.parts()])
 
+            return landmarks_tuples_list
+    
         except IndexError:
-            pass
+            return []
+        
+    
+    def show_landmarks(self, frame, landmarks_tuples_list):
 
-        cv2.imshow('CAPTURING..', image)
+        for landmarks_as_tuples in landmarks_tuples_list:
+            for point in landmarks_as_tuples:
+                frame = cv2.circle(frame, point, 3, (0,0,255), -1)
 
 
     def capture(self, person_name = 'unknown_name'):
@@ -72,7 +79,11 @@ class FaceModule():
 
             frame_counter += 1
             
-            self.show_landmarks(frame)
+            landmarks_tuples_list = self.find_landmarks(frame)
+
+            self.show_landmarks(frame, landmarks_tuples_list)
+
+            cv2.imshow('CAPTURING..', frame)
 
             if frame_counter == 30:
                 break
@@ -81,7 +92,7 @@ class FaceModule():
 
         self.last_person_name = person_name
 
-        print(f'FACE CAPTURED FOR {person_name}!')
+        print(f'FACE CAPTURED FOR {person_name.upper()}')
 
         vid.release()
         cv2.destroyAllWindows()
@@ -120,7 +131,7 @@ class FaceModule():
         
         self.save_encodings(name_encodings)
             
-        print("FACE REGISTERED FOR {}!".format(person_name.upper()))
+        print("FACE REGISTERED FOR {}".format(person_name.upper()))
 
 
     def recognize_face(self, image_path, tolerance = 0.6):
@@ -158,11 +169,11 @@ class FaceModule():
 if __name__ == '__main__':
 
     obj = FaceModule(model = '68')
-    obj.reset_encodings()
+    # obj.reset_encodings()
     # person_name = input("Enter person's name: ")
     # obj.capture(person_name)
-    for person_name in os.listdir(variables.DATABASE_PATH):
-        obj.train(person_name)
+    # for person_name in os.listdir(variables.DATABASE_PATH):
+    # obj.train('aryan')
     for test_image in os.listdir('test_images'):
         name, box = obj.recognize_face('test_images/'+test_image)
         if box != []:
@@ -171,3 +182,4 @@ if __name__ == '__main__':
             cv2.imshow(name, img)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
+
