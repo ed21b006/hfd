@@ -6,19 +6,27 @@ import pickle
 import numpy as np
 import variables
 
-class FaceModule():
+class FaceModule:
 
-    def __init__(self, model = '68'):
+    def __init__(self, detector_model = 'hog', landmark_model = '68'):
 
         self.face_encoder = dlib.face_recognition_model_v1(variables.MODELS_PATH + 'dlib_face_recognition_resnet_model_v1.dat')
-        self.detector = dlib.get_frontal_face_detector()
+        self.detector_model = detector_model
         self.last_person_name = None
-        self.model = model
+        self.landmark_model = landmark_model
 
-        if model == '68':
+        self.detections = None
+        self.landmarks_tuples_list = None
+
+        if detector_model == 'hog':
+            self.detector = dlib.get_frontal_face_detector()
+        elif detector_model == 'cnn':
+            self.detector = dlib.cnn_face_detection_model_v1(variables.MODELS_PATH + 'mmod_human_face_detector.dat')
+
+        if landmark_model == '68':
             self.pose_predictor = dlib.shape_predictor(variables.MODELS_PATH + 'shape_predictor_68_face_landmarks.dat')
         
-        elif model == '5':
+        elif landmark_model == '5':
             self.pose_predictor = dlib.shape_predictor(variables.MODELS_PATH + 'shape_predictor_5_face_landmarks.dat')
         
 
@@ -45,15 +53,23 @@ class FaceModule():
         try:
             landmarks_tuples_list = []
             detections = self.detector(frame, 1)
+            self.detections = detections
 
             for detection in detections:
-                landmarks = self.pose_predictor(frame, detection)
+                if self.detector_model == 'hog':
+                    landmarks = self.pose_predictor(frame, detection)
+                elif self.detector_model == 'cnn':
+                    landmarks = self.pose_predictor(frame, detection.rect)
+
                 landmarks_tuples_list.append([(p.x, p.y) for p in landmarks.parts()])
 
+            self.landmarks_tuples_list = landmarks_tuples_list
             return landmarks_tuples_list
     
         except IndexError:
+            self.landmarks_tuples_list = []
             return []
+            
         
     
     def show_landmarks(self, frame, landmarks_tuples_list):
@@ -79,9 +95,9 @@ class FaceModule():
 
             frame_counter += 1
             
-            landmarks_tuples_list = self.find_landmarks(frame)
+            self.find_landmarks(frame)
 
-            self.show_landmarks(frame, landmarks_tuples_list)
+            self.show_landmarks(frame, self.landmarks_tuples_list)
 
             cv2.imshow('CAPTURING..', frame)
 
@@ -168,18 +184,18 @@ class FaceModule():
 
 if __name__ == '__main__':
 
-    obj = FaceModule(model = '68')
+    obj = FaceModule(detector_model = 'hog', landmark_model = '68')
     # obj.reset_encodings()
-    # person_name = input("Enter person's name: ")
-    # obj.capture(person_name)
+    person_name = input("Enter person's name: ")
+    obj.capture(person_name)
     # for person_name in os.listdir(variables.DATABASE_PATH):
     # obj.train('aryan')
-    for test_image in os.listdir('test_images'):
-        name, box = obj.recognize_face('test_images/'+test_image)
-        if box != []:
-            img = cv2.imread('test_images/'+test_image)
-            cv2.rectangle(img, box[:2], box[2:], (0,255,0))
-            cv2.imshow(name, img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+    # for test_image in os.listdir('test_images'):
+    #     name, box = obj.recognize_face('test_images/'+test_image)
+    #     if box != []:
+    #         img = cv2.imread('test_images/'+test_image)
+    #         cv2.rectangle(img, box[:2], box[2:], (0,255,0))
+    #         cv2.imshow(name, img)
+    #         cv2.waitKey(0)
+    #         cv2.destroyAllWindows()
 

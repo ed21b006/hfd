@@ -1,12 +1,16 @@
+import time
 import winsound
 import cv2
 from imutils import face_utils
 import sys, os
+sys.path.append(os.getcwd())
+from FaceRecognitionModule.face_aligner import FaceAlign
 
 import numpy as np
 sys.path.append(os.getcwd())
 
 class EAR:
+
     def __init__(self, threshold = 0.20, frame_check = 20):
         (self.lStart, self.lEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["left_eye"]
         (self.rStart, self.rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
@@ -44,19 +48,26 @@ class EAR:
             if self.flag >= self.frame_check:
                 cv2.putText(frame, "****************ALERT!****************", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 print ("Drowsy")
-                winsound.Beep(440, 100)
+                winsound.Beep(440, 1000)
         else:
             self.flag = 0
 
 
 if __name__ == '__main__':
     from FaceRecognitionModule.dlib_model import FaceModule
-    obj_drows = EAR(0.4)
+    obj_drows = EAR()
     obj = FaceModule()
     vid = cv2.VideoCapture(0)
+    # al=Align()
     while True:
+        print(time.time(), 'start')
         ret, frame = vid.read()
-        landmarks_tuples_list = obj.find_landmarks(frame)
+        # try:
+        #     frame2=al.align(frame.copy())
+        # except:
+        #     frame2=frame
+        frame2=cv2.cvtColor(frame.copy(), cv2.COLOR_BGR2GRAY)
+        landmarks_tuples_list = obj.find_landmarks(frame2)
         obj.show_landmarks(frame, landmarks_tuples_list)
         try:
             obj_drows.detect(frame, landmarks_tuples_list[0])
@@ -65,6 +76,7 @@ if __name__ == '__main__':
         cv2.imshow('test', frame)
         if cv2.waitKey(1) & 0xFF == ord('x'):
             break
+        print(time.time(), 'end')
     vid.release()
     cv2.destroyAllWindows()
     del obj
